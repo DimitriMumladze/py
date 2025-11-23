@@ -1,218 +1,218 @@
 # ============================================================================
-# MALL CUSTOMERS CLUSTERING ANALYSIS
+# სავაჭრო ცენტრის მომხმარებლების კლასტერიზაციის ანალიზი
 # ============================================================================
-# This script demonstrates unsupervised learning (clustering) techniques:
-# 1. K-Means Clustering with visualization
-# 2. Agglomerative (Hierarchical) Clustering with Dendrogram
-# 3. Silhouette Score for cluster quality evaluation
-# Dataset: Mall_Customers.csv (customer segmentation data)
-# ============================================================================
-
-# Import necessary libraries
-import pandas as pd  # For data manipulation
-from sklearn.cluster import KMeans, AgglomerativeClustering  # Clustering algorithms
-from scipy.cluster.hierarchy import linkage, dendrogram  # For hierarchical clustering visualization
-from sklearn.metrics import silhouette_score  # To evaluate cluster quality
-import matplotlib.pyplot as plt  # For creating visualizations
-
-# ============================================================================
-# DATA LOADING AND EXPLORATION
+# ეს სკრიპტი აჩვენებს ზედამხედველობის გარეშე სწავლებას (კლასტერიზაციის) ტექნიკებს:
+# 1. K-Means კლასტერიზაცია ვიზუალიზაციით
+# 2. აგლომერაციული (იერარქიული) კლასტერიზაცია დენდროგრამით
+# 3. სილუეტის ქულა კლასტერის ხარისხის შეფასებისთვის
+# მონაცემთა ნაკრები: Mall_Customers.csv (მომხმარებლების სეგმენტაციის მონაცემები)
 # ============================================================================
 
-# Load the Mall Customers dataset from URL
+# საჭირო ბიბლიოთეკების შემოტანა
+import pandas as pd  # მონაცემთა მანიპულაციისთვის
+from sklearn.cluster import KMeans, AgglomerativeClustering  # კლასტერიზაციის ალგორითმები
+from scipy.cluster.hierarchy import linkage, dendrogram  # იერარქიული კლასტერიზაციის ვიზუალიზაციისთვის
+from sklearn.metrics import silhouette_score  # კლასტერის ხარისხის შესაფასებლად
+import matplotlib.pyplot as plt  # ვიზუალიზაციების შესაქმნელად
+
+# ============================================================================
+# მონაცემების ჩატვირთვა და გამოკვლევა
+# ============================================================================
+
+# სავაჭრო ცენტრის მომხმარებლების მონაცემთა ნაკრების URL-დან ჩატვირთვა
 data = pd.read_csv("https://gist.githubusercontent.com/pravalliyaram/5c05f43d2351249927b8a3f3cc3e5ecf/raw/8bd6144a87988213693754baaa13fb204933282d/Mall_Customers.csv")
 
-# Display basic information about the dataset
+# მონაცემთა ნაკრების ძირითადი ინფორმაციის ჩვენება
 print("=" * 70)
-print("MALL CUSTOMERS DATASET")
+print("სავაჭრო ცენტრის მომხმარებლების მონაცემთა ნაკრები")
 print("=" * 70)
-print("Original Data:")
+print("ორიგინალური მონაცემები:")
 print(data.head())
-print(f"\nDataset Shape: {data.shape}")
-print(f"Columns: {list(data.columns)}")
+print(f"\nმონაცემთა ნაკრების ფორმა: {data.shape}")
+print(f"სვეტები: {list(data.columns)}")
 print("\n")
 
 # ============================================================================
-# DATA PREPROCESSING
+# მონაცემების წინასწარი დამუშავება
 # ============================================================================
 
-# Drop CustomerID and Age columns as they are not needed for this analysis
-# axis=1 means drop columns (not rows)
-# inplace=True modifies the dataframe directly
+# CustomerID და Age სვეტების წაშლა, რადგან ისინი ამ ანალიზისთვის არ არის საჭირო
+# axis=1 ნიშნავს სვეტების წაშლას (არა მწკრივების)
+# inplace=True პირდაპირ არედაქტირებს dataframe-ს
 data.drop(['CustomerID', 'Age'], axis=1, inplace=True)
 
-print("Data after preprocessing:")
+print("წინასწარი დამუშავების შემდეგ მონაცემები:")
 print(data.head())
 print("\n")
 
 # ============================================================================
-# EXPLORATORY DATA VISUALIZATION
+# გამოკვლევითი მონაცემთა ვიზუალიზაცია
 # ============================================================================
 
 print("=" * 70)
-print("EXPLORATORY DATA ANALYSIS")
+print("გამოკვლევითი მონაცემთა ანალიზი")
 print("=" * 70)
 
-# Create a scatter plot to visualize the relationship between Income and Spending
+# სკატერის დიაგრამის შექმნა შემოსავლისა და ხარჯვის ურთიერთობის ვიზუალიზაციისთვის
 plt.figure(figsize=(10, 8))
 plt.scatter(data['Annual Income (k$)'], data['Spending Score (1-100)'])
-plt.xlabel('Annual Income (k$)')  # X-axis label
-plt.ylabel('Spending Score (1-100)')  # Y-axis label
-plt.title('Customer Distribution: Income vs Spending Score')
-plt.grid(True, alpha=0.3)  # Add subtle grid
+plt.xlabel('წლიური შემოსავალი (k$)')  # X-ღერძის ხელმოწერა
+plt.ylabel('ხარჯვის ქულა (1-100)')  # Y-ღერძის ხელმოწერა
+plt.title('მომხმარებლების განაწილება: შემოსავალი vs ხარჯვის ქულა')
+plt.grid(True, alpha=0.3)  # ნაზი ბადის დამატება
 plt.show()
 
 # ============================================================================
-# K-MEANS CLUSTERING (5 CLUSTERS)
+# K-MEANS კლასტერიზაცია (5 კლასტერი)
 # ============================================================================
 
 print("=" * 70)
-print("K-MEANS CLUSTERING")
+print("K-MEANS კლასტერიზაცია")
 print("=" * 70)
 
-# Create a K-Means model with 5 clusters
-# n_clusters=5 means we want to divide customers into 5 groups
+# K-Means მოდელის შექმნა 5 კლასტერით
+# n_clusters=5 ნიშნავს, რომ გვინდა მომხმარებლების 5 ჯგუფად დაყოფა
 clustering_kmeans = KMeans(n_clusters=5)
 
-# Fit the model and predict cluster labels for each customer
-# We use only 'Annual Income' and 'Spending Score' columns
+# მოდელის მორგება და თითოეული მომხმარებლისთვის კლასტერის ლეიბლის პროგნოზირება
+# ვიყენებთ მხოლოდ 'წლიური შემოსავალი' და 'ხარჯვის ქულა' სვეტებს
 labels_kmeans = clustering_kmeans.fit_predict(data[['Annual Income (k$)', 'Spending Score (1-100)']])
 
-# Visualize the K-Means clustering results
+# K-Means კლასტერიზაციის შედეგების ვიზუალიზაცია
 plt.figure(figsize=(12, 8))
 
-# Plot each customer colored by their cluster
+# თითოეული მომხმარებლის გამოსახვა მათი კლასტერის მიხედვით შეღებილი
 plt.scatter(data['Annual Income (k$)'], data['Spending Score (1-100)'], c=labels_kmeans, cmap='viridis')
 
-# Plot cluster centers as blue dots
-# cluster_centers_[:,0] gets x-coordinates (income)
-# cluster_centers_[:,1] gets y-coordinates (spending score)
+# კლასტერის ცენტრების ლურჯი წერტილებით გამოსახვა
+# cluster_centers_[:,0] იღებს x-კოორდინატებს (შემოსავალი)
+# cluster_centers_[:,1] იღებს y-კოორდინატებს (ხარჯვის ქულა)
 plt.scatter(clustering_kmeans.cluster_centers_[:, 0], 
             clustering_kmeans.cluster_centers_[:, 1], 
             c='blue', s=200, marker='X', edgecolors='black', linewidths=2,
-            label='Cluster Centers')
+            label='კლასტერის ცენტრები')
 
-# Add gender labels to each point for additional insight
+# დამატებითი შეხედულებისთვის თითოეულ წერტილზე სქესის ლეიბლების დამატება
 for i, gender in enumerate(data['Gender']):
     plt.annotate(text=gender, 
                 xy=(data['Annual Income (k$)'][i], data['Spending Score (1-100)'][i]),
                 fontsize=6, alpha=0.6)
 
-plt.xlabel('Annual Income (k$)')
-plt.ylabel('Spending Score (1-100)')
-plt.title('K-Means Clustering: Customer Segmentation (5 Clusters)')
-plt.colorbar(label='Cluster')  # Add color bar to show cluster numbers
+plt.xlabel('წლიური შემოსავალი (k$)')
+plt.ylabel('ხარჯვის ქულა (1-100)')
+plt.title('K-Means კლასტერიზაცია: მომხმარებლების სეგმენტაცია (5 კლასტერი)')
+plt.colorbar(label='კლასტერი')  # კლასტერის ნომრების ჩვენებისთვის ფერის ზოლის დამატება
 plt.legend()
 plt.grid(True, alpha=0.3)
 plt.show()
 
-# Display inertia (sum of squared distances to nearest cluster center)
-# Lower inertia means tighter clusters
-print(f"K-Means Inertia: {clustering_kmeans.inertia_:.2f}")
+# ინერციის ჩვენება (უახლოეს კლასტერის ცენტრამდე მანძილების კვადრატების ჯამი)
+# დაბალი ინერცია ნიშნავს უფრო მჭიდრო კლასტერებს
+print(f"K-Means ინერცია: {clustering_kmeans.inertia_:.2f}")
 print("\n")
 
 # ============================================================================
-# K-MEANS WITH 3 CLUSTERS (Age vs Spending Score)
+# K-MEANS 3 კლასტერით (ასაკი vs ხარჯვის ქულა)
 # ============================================================================
 
 print("=" * 70)
-print("K-MEANS CLUSTERING - ALTERNATIVE (Age vs Spending)")
+print("K-MEANS კლასტერიზაცია - ალტერნატივა (ასაკი vs ხარჯვა)")
 print("=" * 70)
 
-# Reload data for alternative clustering approach
+# ალტერნატიული კლასტერიზაციის მიდგომისთვის მონაცემების ხელახალი ჩატვირთვა
 customer = pd.read_csv("https://gist.githubusercontent.com/pravalliyaram/5c05f43d2351249927b8a3f3cc3e5ecf/raw/8bd6144a87988213693754baaa13fb204933282d/Mall_Customers.csv")
 
-# Drop different columns this time (keeping Age, dropping Income)
+# ამჯერად სხვა სვეტების წაშლა (ასაკის დატოვება, შემოსავლის წაშლა)
 customer.drop(["CustomerID", "Annual Income (k$)"], axis=1, inplace=True)
 
-# Create K-Means model with 3 clusters
+# K-Means მოდელის შექმნა 3 კლასტერით
 model_kmeans_3 = KMeans(n_clusters=3)
 
-# Fit and predict clusters
+# კლასტერების მორგება და პროგნოზირება
 color_predicted = model_kmeans_3.fit_predict(customer[["Age", "Spending Score (1-100)"]])
 
-# Visualize the results
+# შედეგების ვიზუალიზაცია
 plt.figure(figsize=(10, 8))
 plt.scatter(x=customer["Age"], y=customer["Spending Score (1-100)"], c=color_predicted, cmap='plasma')
 
-# Plot cluster centers
+# კლასტერის ცენტრების გამოსახვა
 plt.scatter(x=model_kmeans_3.cluster_centers_[:, 0], 
             y=model_kmeans_3.cluster_centers_[:, 1], 
             c="red", s=200, marker='X', edgecolors='black', linewidths=2,
-            label='Cluster Centers')
+            label='კლასტერის ცენტრები')
 
-plt.xlabel('Age')
-plt.ylabel('Spending Score (1-100)')
-plt.title('K-Means Clustering: Age vs Spending Score (3 Clusters)')
-plt.colorbar(label='Cluster')
+plt.xlabel('ასაკი')
+plt.ylabel('ხარჯვის ქულა (1-100)')
+plt.title('K-Means კლასტერიზაცია: ასაკი vs ხარჯვის ქულა (3 კლასტერი)')
+plt.colorbar(label='კლასტერი')
 plt.legend()
 plt.grid(True, alpha=0.3)
 plt.show()
 
-print(f"K-Means (3 clusters) Inertia: {model_kmeans_3.inertia_:.2f}")
+print(f"K-Means (3 კლასტერი) ინერცია: {model_kmeans_3.inertia_:.2f}")
 print("\n")
 
 # ============================================================================
-# HIERARCHICAL (AGGLOMERATIVE) CLUSTERING WITH DENDROGRAM
+# იერარქიული (აგლომერაციული) კლასტერიზაცია დენდროგრამით
 # ============================================================================
 
 print("=" * 70)
-print("HIERARCHICAL CLUSTERING")
+print("იერარქიული კლასტერიზაცია")
 print("=" * 70)
 
-# Create linkage matrix for dendrogram
-# This calculates the hierarchical clustering structure
+# დენდროგრამისთვის linkage მატრიცის შექმნა
+# ეს ითვლის იერარქიული კლასტერიზაციის სტრუქტურას
 z = linkage(customer[["Age", "Spending Score (1-100)"]])
 
-# Plot dendrogram to visualize hierarchical clustering
+# დენდროგრამის გამოსახვა იერარქიული კლასტერიზაციის ვიზუალიზაციისთვის
 plt.figure(figsize=(15, 8))
-dendrogram(z)  # Create dendrogram plot
-plt.xlabel('Customer Index')
-plt.ylabel('Distance')
-plt.title('Hierarchical Clustering Dendrogram')
-plt.axhline(y=200, color='r', linestyle='--', label='Cut line for 5 clusters')  # Suggested cut line
+dendrogram(z)  # დენდროგრამის დიაგრამის შექმნა
+plt.xlabel('მომხმარებლის ინდექსი')
+plt.ylabel('მანძილი')
+plt.title('იერარქიული კლასტერიზაციის დენდროგრამა')
+plt.axhline(y=200, color='r', linestyle='--', label='ჭრის ხაზი 5 კლასტერისთვის')  # შემოთავაზებული ჭრის ხაზი
 plt.legend()
 plt.show()
 
-# Create Agglomerative Clustering model with 5 clusters
-# linkage='ward' minimizes variance within clusters
+# აგლომერაციული კლასტერიზაციის მოდელის შექმნა 5 კლასტერით
+# linkage='ward' ამცირებს კლასტერებში დისპერსიას
 model_agg = AgglomerativeClustering(n_clusters=5, linkage="ward")
 
-# Fit and predict cluster labels
+# კლასტერის ლეიბლების მორგება და პროგნოზირება
 label_agg = model_agg.fit_predict(customer[["Age", "Spending Score (1-100)"]])
 
-# Prepare data for silhouette score calculation
+# სილუეტის ქულის გამოთვლისთვის მონაცემების მომზადება
 x = customer[["Age", "Spending Score (1-100)"]]
 
-# Calculate silhouette score (measures cluster quality)
-# Score ranges from -1 to 1, where higher is better
-# Values near 0 indicate overlapping clusters
+# სილუეტის ქულის გამოთვლა (ზომავს კლასტერის ხარისხს)
+# ქულა მერყეობს -1-დან 1-მდე, სადაც უფრო მაღალი უკეთესია
+# 0-თან ახლოს მნიშვნელობები მიუთითებს გადახურულ კლასტერებზე
 silhouette = silhouette_score(x, label_agg)
 
-print(f"Agglomerative Clustering Silhouette Score: {silhouette:.4f}")
-print("Interpretation: Higher score (close to 1) means better-defined clusters")
+print(f"აგლომერაციული კლასტერიზაციის სილუეტის ქულა: {silhouette:.4f}")
+print("ინტერპრეტაცია: უფრო მაღალი ქულა (1-თან ახლოს) ნიშნავს უკეთესად განსაზღვრულ კლასტერებს")
 print("\n")
 
-# Visualize Agglomerative Clustering results
+# აგლომერაციული კლასტერიზაციის შედეგების ვიზუალიზაცია
 plt.figure(figsize=(10, 8))
 plt.scatter(x=customer["Age"], y=customer["Spending Score (1-100)"], c=label_agg, cmap='coolwarm')
-plt.xlabel('Age')
-plt.ylabel('Spending Score (1-100)')
-plt.title('Agglomerative Clustering: Age vs Spending Score (5 Clusters)')
-plt.colorbar(label='Cluster')
+plt.xlabel('ასაკი')
+plt.ylabel('ხარჯვის ქულა (1-100)')
+plt.title('აგლომერაციული კლასტერიზაცია: ასაკი vs ხარჯვის ქულა (5 კლასტერი)')
+plt.colorbar(label='კლასტერი')
 plt.grid(True, alpha=0.3)
 plt.show()
 
 # ============================================================================
-# SUMMARY
+# შეჯამება
 # ============================================================================
 
 print("=" * 70)
-print("CLUSTERING ANALYSIS SUMMARY")
+print("კლასტერიზაციის ანალიზის შეჯამება")
 print("=" * 70)
-print(f"K-Means (5 clusters) Inertia: {clustering_kmeans.inertia_:.2f}")
-print(f"K-Means (3 clusters) Inertia: {model_kmeans_3.inertia_:.2f}")
-print(f"Agglomerative Clustering Silhouette Score: {silhouette:.4f}")
-print("\nNote: Lower inertia = tighter clusters")
-print("      Higher silhouette score = better cluster separation")
+print(f"K-Means (5 კლასტერი) ინერცია: {clustering_kmeans.inertia_:.2f}")
+print(f"K-Means (3 კლასტერი) ინერცია: {model_kmeans_3.inertia_:.2f}")
+print(f"აგლომერაციული კლასტერიზაციის სილუეტის ქულა: {silhouette:.4f}")
+print("\nშენიშვნა: დაბალი ინერცია = უფრო მჭიდრო კლასტერები")
+print("      უფრო მაღალი სილუეტის ქულა = უკეთესი კლასტერების განცალკევება")
 print("=" * 70)

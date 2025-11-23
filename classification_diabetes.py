@@ -1,179 +1,179 @@
 # ============================================================================
-# DIABETES PREDICTION CLASSIFICATION
+# დიაბეტის პროგნოზირების კლასიფიკაცია
 # ============================================================================
-# This script demonstrates classification with pipelines and hyperparameter tuning:
-# 1. Naive Bayes with MinMaxScaler in Pipeline
-# 2. Random Forest with GridSearchCV for hyperparameter optimization
-# Dataset: diabetes.csv (Pima Indians Diabetes Database)
-# ============================================================================
-
-# Import necessary libraries
-import pandas as pd  # For data manipulation
-from sklearn.naive_bayes import GaussianNB  # Naive Bayes classifier
-from sklearn.ensemble import RandomForestClassifier  # Random Forest classifier
-from sklearn.preprocessing import MinMaxScaler  # To scale features to [0,1] range
-from sklearn.pipeline import Pipeline  # To chain preprocessing and model together
-from sklearn.model_selection import train_test_split, GridSearchCV  # For data splitting and hyperparameter tuning
-
-# ============================================================================
-# DATA LOADING AND EXPLORATION
+# ეს სკრიპტი აჩვენებს კლასიფიკაციას pipeline-ებითა და ჰიპერპარამეტრების დარეგულირებით:
+# 1. Naive Bayes MinMaxScaler-ით Pipeline-ში
+# 2. Random Forest GridSearchCV-ით ჰიპერპარამეტრების ოპტიმიზაციისთვის
+# მონაცემთა ნაკრები: diabetes.csv (Pima Indians Diabetes Database)
 # ============================================================================
 
-# Load the diabetes dataset
+# საჭირო ბიბლიოთეკების შემოტანა
+import pandas as pd  # მონაცემთა მანიპულაციისთვის
+from sklearn.naive_bayes import GaussianNB  # Naive Bayes კლასიფიკატორი
+from sklearn.ensemble import RandomForestClassifier  # Random Forest კლასიფიკატორი
+from sklearn.preprocessing import MinMaxScaler  # ფუნქციების [0,1] დიაპაზონში მასშტაბირებისთვის
+from sklearn.pipeline import Pipeline  # წინასწარი დამუშავებისა და მოდელის ერთად დაკავშირებისთვის
+from sklearn.model_selection import train_test_split, GridSearchCV  # მონაცემების დაყოფისა და ჰიპერპარამეტრების დარეგულირებისთვის
+
+# ============================================================================
+# მონაცემების ჩატვირთვა და გამოკვლევა
+# ============================================================================
+
+# დიაბეტის მონაცემთა ნაკრების ჩატვირთვა
 data = pd.read_csv("diabetes.csv")
 
 print("=" * 70)
-print("DIABETES DATASET")
+print("დიაბეტის მონაცემთა ნაკრები")
 print("=" * 70)
-print("First 5 rows of the dataset:")
+print("მონაცემთა ნაკრების პირველი 5 მწკრივი:")
 print(data.head())
-print(f"\nDataset Shape: {data.shape}")
-print(f"\nColumn Names: {list(data.columns)}")
-print(f"\nTarget Variable (Outcome) Values: {data['Outcome'].unique()}")
-print("  0 = No Diabetes, 1 = Diabetes")
+print(f"\nმონაცემთა ნაკრების ფორმა: {data.shape}")
+print(f"\nსვეტების სახელები: {list(data.columns)}")
+print(f"\nსამიზნე ცვლადის (Outcome) მნიშვნელობები: {data['Outcome'].unique()}")
+print("  0 = დიაბეტი არ არის, 1 = დიაბეტი")
 print("\n")
 
 # ============================================================================
-# DATA PREPARATION
+# მონაცემების მომზადება
 # ============================================================================
 
-# Select features (independent variables) for prediction
-# These are medical measurements that might indicate diabetes risk
+# პროგნოზირებისთვის ფუნქციების (დამოუკიდებელი ცვლადების) შერჩევა
+# ეს არის სამედიცინო გაზომვები, რომლებიც შეიძლება მიუთითებდეს დიაბეტის რისკზე
 X = data[['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']].values
 
-# Select target variable (dependent variable) - what we want to predict
+# სამიზნე ცვლადის (დამოკიდებული ცვლადი) შერჩევა - რისი პროგნოზირებაც გვინდა
 y = data['Outcome'].values
 
-# Split data into training (70%) and testing (30%) sets
-# random_state=1 ensures reproducibility
+# მონაცემების სწავლების (70%) და ტესტირების (30%) სეტებად დაყოფა
+# random_state=1 უზრუნველყოფს განმეორებადობას
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1)
 
 print("=" * 70)
-print("DATA SPLIT")
+print("მონაცემების დაყოფა")
 print("=" * 70)
-print(f"Training set size: {X_train.shape[0]} samples")
-print(f"Testing set size: {X_test.shape[0]} samples")
+print(f"სწავლების სეტის ზომა: {X_train.shape[0]} ნიმუში")
+print(f"ტესტირების სეტის ზომა: {X_test.shape[0]} ნიმუში")
 print("\n")
 
 # ============================================================================
-# MODEL 1: NAIVE BAYES WITH PIPELINE
+# მოდელი 1: NAIVE BAYES PIPELINE-ით
 # ============================================================================
 
 print("=" * 70)
-print("NAIVE BAYES CLASSIFIER WITH PIPELINE")
+print("NAIVE BAYES კლასიფიკატორი PIPELINE-ით")
 print("=" * 70)
 
-# Create a Pipeline that chains preprocessing and model
-# Step 1: MinMaxScaler - scales all features to range [0, 1]
-# Step 2: GaussianNB - applies Naive Bayes classification
-# Pipeline ensures scaler is fit only on training data, preventing data leakage
+# Pipeline-ის შექმნა, რომელიც აერთიანებს წინასწარ დამუშავებასა და მოდელს
+# ნაბიჯი 1: MinMaxScaler - ყველა ფუნქციას მასშტაბირებს [0, 1] დიაპაზონში
+# ნაბიჯი 2: GaussianNB - იყენებს Naive Bayes კლასიფიკაციას
+# Pipeline უზრუნველყოფს, რომ scaler მხოლოდ სწავლების მონაცემებზე იყოს მორგებული, რაც ხელს უშლის მონაცემების გაჟონვას
 hybrid_nb = Pipeline(steps=[
-    ("Scaler", MinMaxScaler()),  # Preprocessing step
-    ("algo1", GaussianNB())      # Model step
+    ("Scaler", MinMaxScaler()),  # წინასწარი დამუშავების ნაბიჯი
+    ("algo1", GaussianNB())      # მოდელის ნაბიჯი
 ])
 
-# Fit the pipeline on training data
-# This fits both the scaler AND the model
+# Pipeline-ის მორგება სწავლების მონაცემებზე
+# ეს ამორგებს როგორც scaler-ს, ასევე მოდელს
 hybrid_nb.fit(X_train, y_train)
 
-# Calculate accuracy on test data
-# Pipeline automatically applies scaling before prediction
+# ტესტის მონაცემებზე სიზუსტის გამოთვლა
+# Pipeline ავტომატურად იყენებს მასშტაბირებას პროგნოზამდე
 accuracy_nb = hybrid_nb.score(X_test, y_test)
 
-print(f"Naive Bayes Accuracy: {accuracy_nb:.4f}")
-print(f"Naive Bayes Accuracy: {accuracy_nb*100:.2f}%")
+print(f"Naive Bayes სიზუსტე: {accuracy_nb:.4f}")
+print(f"Naive Bayes სიზუსტე: {accuracy_nb*100:.2f}%")
 print("\n")
 
 # ============================================================================
-# MODEL 2: RANDOM FOREST WITHOUT TUNING (BASELINE)
+# მოდელი 2: RANDOM FOREST დარეგულირების გარეშე (ბაზისური ხაზი)
 # ============================================================================
 
 print("=" * 70)
-print("RANDOM FOREST CLASSIFIER (BASELINE)")
+print("RANDOM FOREST კლასიფიკატორი (ბაზისური ხაზი)")
 print("=" * 70)
 
-# Create a Random Forest model with manual parameters
-# n_estimators=100 means 100 decision trees in the forest
-# max_depth=2 limits tree depth to prevent overfitting
+# Random Forest მოდელის შექმნა ხელით პარამეტრებით
+# n_estimators=100 ნიშნავს 100 გადაწყვეტილების ხეს ტყეში
+# max_depth=2 ზღუდავს ხის სიღრმეს გადაჭარბებული მორგების თავიდან ასაცილებლად
 model_rf_baseline = RandomForestClassifier(n_estimators=100, max_depth=2)
 
-# Train the model
+# მოდელის სწავლება
 model_rf_baseline.fit(X_train, y_train)
 
-# Calculate accuracy
+# სიზუსტის გამოთვლა
 accuracy_rf_baseline = model_rf_baseline.score(X_test, y_test)
 
-print(f"Random Forest (Baseline) Accuracy: {accuracy_rf_baseline:.4f}")
-print(f"Random Forest (Baseline) Accuracy: {accuracy_rf_baseline*100:.2f}%")
+print(f"Random Forest (ბაზისური ხაზი) სიზუსტე: {accuracy_rf_baseline:.4f}")
+print(f"Random Forest (ბაზისური ხაზი) სიზუსტე: {accuracy_rf_baseline*100:.2f}%")
 print("\n")
 
 # ============================================================================
-# MODEL 3: RANDOM FOREST WITH GRID SEARCH (OPTIMIZED)
+# მოდელი 3: RANDOM FOREST GRID SEARCH-ით (ოპტიმიზებული)
 # ============================================================================
 
 print("=" * 70)
-print("RANDOM FOREST WITH GRID SEARCH OPTIMIZATION")
+print("RANDOM FOREST GRID SEARCH ოპტიმიზაციით")
 print("=" * 70)
 
-# Create a Random Forest model (parameters will be tuned)
+# Random Forest მოდელის შექმნა (პარამეტრები დარეგულირდება)
 model_rf = RandomForestClassifier()
 
-# Define parameter grid to search
-# GridSearchCV will try ALL combinations of these parameters
+# ძიებისთვის პარამეტრების ბადის განსაზღვრა
+# GridSearchCV შეამოწმებს ამ პარამეტრების ყველა კომბინაციას
 parameters = dict()
-parameters['n_estimators'] = [20, 30, 10, 50]  # Number of trees to try
-parameters['max_depth'] = [2, 3, 4, 5, 6]      # Maximum depth of trees to try
+parameters['n_estimators'] = [20, 30, 10, 50]  # ხეების რაოდენობა, რომელიც უნდა შემოწმდეს
+parameters['max_depth'] = [2, 3, 4, 5, 6]      # ხეების მაქსიმალური სიღრმე, რომელიც უნდა შემოწმდეს
 
-print("Parameter Grid:")
-print(f"  n_estimators (number of trees): {parameters['n_estimators']}")
-print(f"  max_depth (tree depth): {parameters['max_depth']}")
-print(f"  Total combinations to test: {len(parameters['n_estimators']) * len(parameters['max_depth'])}")
-print("\nSearching for best parameters...")
+print("პარამეტრების ბადე:")
+print(f"  n_estimators (ხეების რაოდენობა): {parameters['n_estimators']}")
+print(f"  max_depth (ხის სიღრმე): {parameters['max_depth']}")
+print(f"  შემოწმებადი კომბინაციების საერთო რაოდენობა: {len(parameters['n_estimators']) * len(parameters['max_depth'])}")
+print("\nსაუკეთესო პარამეტრების ძიება...")
 
-# Create GridSearchCV object
-# estimator: the model to optimize
-# param_grid: parameters to try
-# scoring: metric to optimize (accuracy)
-# n_jobs=-1: use all CPU cores for parallel processing
-# cv=5: use 5-fold cross-validation
+# GridSearchCV ობიექტის შექმნა
+# estimator: ოპტიმიზაციისთვის მოდელი
+# param_grid: შესამოწმებელი პარამეტრები
+# scoring: ოპტიმიზაციის მეტრიკა (სიზუსტე)
+# n_jobs=-1: პარალელური დამუშავებისთვის ყველა CPU ბირთვის გამოყენება
+# cv=5: 5-ჯერადი ჯვარედინი ვალიდაციის გამოყენება
 hybrid_rf = GridSearchCV(
     estimator=model_rf,
     param_grid=parameters,
     scoring='accuracy',
     n_jobs=-1,
-    cv=5  # 5-fold cross-validation
+    cv=5  # 5-ჯერადი ჯვარედინი ვალიდაცია
 )
 
-# Fit GridSearchCV - this trains models with all parameter combinations
+# GridSearchCV-ის მორგება - ეს ასწავლის მოდელებს ყველა პარამეტრის კომბინაციით
 hybrid_rf.fit(X_train, y_train)
 
-# Get accuracy with best parameters found
+# საუკეთესო პარამეტრებით ნაპოვნი სიზუსტის მიღება
 accuracy_rf_optimized = hybrid_rf.score(X_test, y_test)
 
-# Get the best parameters found by GridSearch
+# GridSearch-ის მიერ ნაპოვნი საუკეთესო პარამეტრების მიღება
 best_params = hybrid_rf.best_params_
 
-print("\nGrid Search Complete!")
-print(f"Random Forest (Optimized) Accuracy: {accuracy_rf_optimized:.4f}")
-print(f"Random Forest (Optimized) Accuracy: {accuracy_rf_optimized*100:.2f}%")
-print(f"\nBest Parameters Found:")
-print(f"  n_estimators (number of trees): {best_params['n_estimators']}")
-print(f"  max_depth (tree depth): {best_params['max_depth']}")
+print("\nბადის ძიება დასრულებულია!")
+print(f"Random Forest (ოპტიმიზებული) სიზუსტე: {accuracy_rf_optimized:.4f}")
+print(f"Random Forest (ოპტიმიზებული) სიზუსტე: {accuracy_rf_optimized*100:.2f}%")
+print(f"\nნაპოვნი საუკეთესო პარამეტრები:")
+print(f"  n_estimators (ხეების რაოდენობა): {best_params['n_estimators']}")
+print(f"  max_depth (ხის სიღრმე): {best_params['max_depth']}")
 print("\n")
 
 # ============================================================================
-# DETAILED GRID SEARCH RESULTS
+# დეტალური GRID SEARCH შედეგები
 # ============================================================================
 
 print("=" * 70)
-print("DETAILED GRID SEARCH RESULTS")
+print("დეტალური GRID SEARCH შედეგები")
 print("=" * 70)
 
-# Convert GridSearch results to DataFrame for easy viewing
+# GridSearch შედეგების DataFrame-ად გადაქცევა მარტივი ნახვისთვის
 results_df = pd.DataFrame(hybrid_rf.cv_results_)
 
-# Select and display relevant columns
-print("\nTop 5 Parameter Combinations by Mean Test Score:")
+# შესაბამისი სვეტების შერჩევა და ჩვენება
+print("\nსაშუალო ტესტის ქულით ტოპ 5 პარამეტრის კომბინაცია:")
 print(results_df[['param_n_estimators', 'param_max_depth', 'mean_test_score', 'rank_test_score']]
       .sort_values('rank_test_score')
       .head(5)
@@ -181,40 +181,40 @@ print(results_df[['param_n_estimators', 'param_max_depth', 'mean_test_score', 'r
 print("\n")
 
 # ============================================================================
-# MODEL COMPARISON
+# მოდელების შედარება
 # ============================================================================
 
 print("=" * 70)
-print("MODEL COMPARISON SUMMARY")
+print("მოდელების შედარების შეჯამება")
 print("=" * 70)
-print(f"Naive Bayes Accuracy:              {accuracy_nb:.4f} ({accuracy_nb*100:.2f}%)")
-print(f"Random Forest (Baseline) Accuracy: {accuracy_rf_baseline:.4f} ({accuracy_rf_baseline*100:.2f}%)")
-print(f"Random Forest (Optimized) Accuracy: {accuracy_rf_optimized:.4f} ({accuracy_rf_optimized*100:.2f}%)")
-print(f"\nImprovement from Baseline to Optimized: {(accuracy_rf_optimized - accuracy_rf_baseline)*100:.2f}%")
+print(f"Naive Bayes სიზუსტე:              {accuracy_nb:.4f} ({accuracy_nb*100:.2f}%)")
+print(f"Random Forest (ბაზისური ხაზი) სიზუსტე: {accuracy_rf_baseline:.4f} ({accuracy_rf_baseline*100:.2f}%)")
+print(f"Random Forest (ოპტიმიზებული) სიზუსტე: {accuracy_rf_optimized:.4f} ({accuracy_rf_optimized*100:.2f}%)")
+print(f"\nბაზისური ხაზიდან ოპტიმიზებულზე გაუმჯობესება: {(accuracy_rf_optimized - accuracy_rf_baseline)*100:.2f}%")
 print("=" * 70)
 
 # ============================================================================
-# KEY INSIGHTS
+# ძირითადი შეხედულებები
 # ============================================================================
 
 print("\n" + "=" * 70)
-print("KEY INSIGHTS")
+print("ძირითადი შეხედულებები")
 print("=" * 70)
-print("1. Pipeline Benefits:")
-print("   - Prevents data leakage by fitting scaler only on training data")
-print("   - Simplifies code by chaining preprocessing and modeling")
-print("   - Makes deployment easier")
-print("\n2. GridSearchCV Benefits:")
-print("   - Automatically finds best hyperparameters")
-print("   - Uses cross-validation to prevent overfitting")
-print("   - Saves time compared to manual tuning")
-print("\n3. Model Selection:")
+print("1. Pipeline-ის სარგებელი:")
+print("   - ხელს უშლის მონაცემების გაჟონვას scaler-ის მხოლოდ სწავლების მონაცემებზე მორგებით")
+print("   - ამარტივებს კოდს წინასწარი დამუშავებისა და მოდელირების ერთად დაკავშირებით")
+print("   - ამარტივებს განლაგებას")
+print("\n2. GridSearchCV-ის სარგებელი:")
+print("   - ავტომატურად პოულობს საუკეთესო ჰიპერპარამეტრებს")
+print("   - იყენებს ჯვარედინ ვალიდაციას გადაჭარბებული მორგების თავიდან ასაცილებლად")
+print("   - დაზოგავს დროს ხელით დარეგულირებასთან შედარებით")
+print("\n3. მოდელის შერჩევა:")
 if accuracy_nb > accuracy_rf_optimized:
-    print("   - Naive Bayes performed best for this dataset")
-    print("   - Naive Bayes is simpler and faster")
+    print("   - Naive Bayes ამ მონაცემთა ნაკრებისთვის საუკეთესო შედეგი აჩვენა")
+    print("   - Naive Bayes უფრო მარტივი და სწრაფია")
 elif accuracy_rf_optimized > accuracy_nb:
-    print("   - Optimized Random Forest performed best")
-    print("   - Random Forest can capture complex patterns")
+    print("   - ოპტიმიზებულმა Random Forest-მა საუკეთესო შედეგი აჩვენა")
+    print("   - Random Forest შეუძლია რთული ნიმუშების დაჭერა")
 else:
-    print("   - Both models performed equally well")
+    print("   - ორივე მოდელმა თანაბრად კარგი შედეგი აჩვენა")
 print("=" * 70)

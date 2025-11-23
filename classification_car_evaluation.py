@@ -1,169 +1,169 @@
 # ============================================================================
-# CAR EVALUATION CLASSIFICATION
+# მანქანის შეფასების კლასიფიკაცია
 # ============================================================================
-# This script demonstrates three classification algorithms:
-# 1. Decision Tree Classifier with Confusion Matrix
-# 2. Support Vector Machine (SVM) with Confusion Matrix
-# 3. Logistic Regression with ROC Curve
-# Dataset: car_evaluation.csv
-# ============================================================================
-
-# Import necessary libraries
-import pandas as pd  # For data manipulation and analysis
-from sklearn.preprocessing import LabelEncoder  # To convert categorical text data to numerical
-from sklearn.tree import DecisionTreeClassifier  # Decision tree algorithm for classification
-from sklearn.svm import SVC  # Support Vector Classifier algorithm
-from sklearn.linear_model import LogisticRegression  # Logistic regression algorithm
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_curve, roc_auc_score  # Evaluation metrics
-import matplotlib.pyplot as plt  # For creating visualizations
-from sklearn.model_selection import train_test_split  # To split data into training and testing sets
-
-# ============================================================================
-# DATA LOADING AND PREPROCESSING
+# ეს სკრიპტი აჩვენებს სამ კლასიფიკაციის ალგორითმს:
+# 1. გადაწყვეტილების ხის კლასიფიკატორი კონფუზიის მატრიცით
+# 2. ვექტორული მხარდაჭერის მანქანა (SVM) კონფუზიის მატრიცით
+# 3. ლოგისტიკური რეგრესია ROC მრუდით
+# მონაცემთა ნაკრები: car_evaluation.csv
 # ============================================================================
 
-# Read the car evaluation CSV file (no headers in original file)
+# საჭირო ბიბლიოთეკების შემოტანა
+import pandas as pd  # მონაცემთა მანიპულაციისა და ანალიზისთვის
+from sklearn.preprocessing import LabelEncoder  # კატეგორიული ტექსტური მონაცემების რიცხვებად გადაქცევისთვის
+from sklearn.tree import DecisionTreeClassifier  # კლასიფიკაციისთვის გადაწყვეტილების ხის ალგორითმი
+from sklearn.svm import SVC  # ვექტორული მხარდაჭერის კლასიფიკატორის ალგორითმი
+from sklearn.linear_model import LogisticRegression  # ლოგისტიკური რეგრესიის ალგორითმი
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_curve, roc_auc_score  # შეფასების მეტრიკები
+import matplotlib.pyplot as plt  # ვიზუალიზაციების შესაქმნელად
+from sklearn.model_selection import train_test_split  # მონაცემების სწავლებისა და ტესტირების სეტებად დაყოფისთვის
+
+# ============================================================================
+# მონაცემების ჩატვირთვა და წინასწარი დამუშავება
+# ============================================================================
+
+# მანქანის შეფასების CSV ფაილის წაკითხვა (ორიგინალურ ფაილში სათაურები არ არის)
 car = pd.read_csv("car_evaluation.csv", header=None)
 
-# Assign meaningful column names to the dataset
+# მონაცემთა ნაკრებს მნიშვნელოვანი სვეტების სახელების მინიჭება
 car.columns = ["Buying_Price", "Maintance_cost", "N_of_doors", "N_person", "lug_boot",
                "safety", "Class"]
 
-# Map the target variable (Class) to binary values:
-# 'vgood' (very good) = 1, all others ('unacc', 'acc', 'good') = 0
+# სამიზნე ცვლადის (Class) ბინარულ მნიშვნელობებად გადაქცევა:
+# 'vgood' (ძალიან კარგი) = 1, ყველა სხვა ('unacc', 'acc', 'good') = 0
 car['Class'] = car['Class'].map({'unacc': 0, 'acc': 0, 'good': 0, 'vgood': 1})
 
-# Convert all categorical (object type) columns to numerical using LabelEncoder
+# ყველა კატეგორიული (object ტიპის) სვეტის რიცხვებად გადაქცევა LabelEncoder-ის გამოყენებით
 for col in car.columns:
-    if car[col].dtype == 'object':  # Check if column contains text data
-        car[col] = LabelEncoder().fit_transform(car[col])  # Convert text to numbers
+    if car[col].dtype == 'object':  # შემოწმება, შეიცავს თუ არა სვეტი ტექსტურ მონაცემებს
+        car[col] = LabelEncoder().fit_transform(car[col])  # ტექსტის რიცხვებად გადაქცევა
 
-# Display the first 5 rows to verify preprocessing
-print("Preprocessed Data:")
+# პირველი 5 მწკრივის ჩვენება წინასწარი დამუშავების შესამოწმებლად
+print("წინასწარ დამუშავებული მონაცემები:")
 print(car.head())
 print("\n")
 
-# Separate features (X) and target variable (y)
-y = car['Class']  # Target variable (what we want to predict)
-X = car.drop('Class', axis=1)  # Features (all columns except Class)
+# ფუნქციების (X) და სამიზნე ცვლადის (y) გამოყოფა
+y = car['Class']  # სამიზნე ცვლადი (რისი პროგნოზირებაც გვინდა)
+X = car.drop('Class', axis=1)  # ფუნქციები (ყველა სვეტი Class-ის გარდა)
 
-# Split data into training (80%) and testing (20%) sets
-# random_state=1 ensures reproducibility (same split every time)
+# მონაცემების სწავლების (80%) და ტესტირების (20%) სეტებად დაყოფა
+# random_state=1 უზრუნველყოფს განმეორებადობას (იგივე დაყოფა ყოველ ჯერზე)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
 
 # ============================================================================
-# MODEL 1: DECISION TREE CLASSIFIER
+# მოდელი 1: გადაწყვეტილების ხის კლასიფიკატორი
 # ============================================================================
 
 print("=" * 70)
-print("DECISION TREE CLASSIFIER")
+print("გადაწყვეტილების ხის კლასიფიკატორი")
 print("=" * 70)
 
-# Create a Decision Tree model with default parameters
+# გადაწყვეტილების ხის მოდელის შექმნა ნაგულისხმევი პარამეტრებით
 model_dt = DecisionTreeClassifier()
 
-# Train the model using training data
+# მოდელის სწავლება სწავლების მონაცემებით
 model_dt.fit(X_train, y_train)
 
-# Calculate and display accuracy on test data
+# ტესტის მონაცემებზე სიზუსტის გამოთვლა და ჩვენება
 accuracy_dt = model_dt.score(X_test, y_test)
-print(f"Decision Tree Accuracy: {accuracy_dt:.4f}")
+print(f"გადაწყვეტილების ხის სიზუსტე: {accuracy_dt:.4f}")
 
-# Make predictions on test data
+# ტესტის მონაცემებზე პროგნოზების გაკეთება
 y_prediction_dt = model_dt.predict(X_test)
 
-# Create confusion matrix to see prediction performance
+# კონფუზიის მატრიცის შექმნა პროგნოზის შესრულების სანახავად
 conf_matrix_dt = confusion_matrix(y_test, y_prediction_dt)
 
-# Create a visual display of the confusion matrix
+# კონფუზიის მატრიცის ვიზუალური ჩვენების შექმნა
 result_dt = ConfusionMatrixDisplay(confusion_matrix=conf_matrix_dt, display_labels=model_dt.classes_)
-result_dt.plot()  # Plot the confusion matrix
-plt.title("Decision Tree - Confusion Matrix")  # Add title
-plt.show()  # Display the plot
+result_dt.plot()  # კონფუზიის მატრიცის გამოსახვა
+plt.title("გადაწყვეტილების ხე - კონფუზიის მატრიცა")  # სათაურის დამატება
+plt.show()  # გრაფიკის ჩვენება
 
 print("\n")
 
 # ============================================================================
-# MODEL 2: SUPPORT VECTOR MACHINE (SVM)
+# მოდელი 2: ვექტორული მხარდაჭერის მანქანა (SVM)
 # ============================================================================
 
 print("=" * 70)
-print("SUPPORT VECTOR MACHINE (SVM)")
+print("ვექტორული მხარდაჭერის მანქანა (SVM)")
 print("=" * 70)
 
-# Create an SVM model with probability estimation enabled
-# probability=True allows us to get probability scores for predictions
+# SVM მოდელის შექმნა ალბათობის შეფასებით
+# probability=True საშუალებას გვაძლევს მივიღოთ ალბათობის ქულები პროგნოზებისთვის
 model_svm = SVC(probability=True)
 
-# Train the SVM model
+# SVM მოდელის სწავლება
 model_svm.fit(X_train, y_train)
 
-# Calculate and display accuracy
+# სიზუსტის გამოთვლა და ჩვენება
 accuracy_svm = model_svm.score(X_test, y_test)
-print(f"SVM Accuracy: {accuracy_svm:.4f}")
+print(f"SVM სიზუსტე: {accuracy_svm:.4f}")
 
-# Make predictions on test data
+# ტესტის მონაცემებზე პროგნოზების გაკეთება
 y_prediction_svm = model_svm.predict(X_test)
 
-# Create confusion matrix
+# კონფუზიის მატრიცის შექმნა
 conf_matrix_svm = confusion_matrix(y_test, y_prediction_svm)
 
-# Display the confusion matrix visually
+# კონფუზიის მატრიცის ვიზუალური ჩვენება
 result_svm = ConfusionMatrixDisplay(confusion_matrix=conf_matrix_svm, display_labels=model_svm.classes_)
 result_svm.plot()
-plt.title("SVM - Confusion Matrix")
+plt.title("SVM - კონფუზიის მატრიცა")
 plt.show()
 
 print("\n")
 
 # ============================================================================
-# MODEL 3: LOGISTIC REGRESSION WITH ROC CURVE
+# მოდელი 3: ლოგისტიკური რეგრესია ROC მრუდით
 # ============================================================================
 
 print("=" * 70)
-print("LOGISTIC REGRESSION WITH ROC CURVE")
+print("ლოგისტიკური რეგრესია ROC მრუდით")
 print("=" * 70)
 
-# Create a Logistic Regression model
+# ლოგისტიკური რეგრესიის მოდელის შექმნა
 model_lr = LogisticRegression()
 
-# Train the model
+# მოდელის სწავლება
 model_lr.fit(X_train, y_train)
 
-# Get probability predictions for the positive class (class 1)
-# [:,1] selects only probabilities for class 1
+# დადებითი კლასის (კლასი 1) ალბათობის პროგნოზების მიღება
+# [:,1] ირჩევს მხოლოდ კლასი 1-ის ალბათობებს
 positive_probabilities = model_lr.predict_proba(X_test)[:, 1]
 
-# Calculate ROC curve values
-# fpr = False Positive Rate, tpr = True Positive Rate, threshold = decision thresholds
+# ROC მრუდის მნიშვნელობების გამოთვლა
+# fpr = ცრუ დადებითი მაჩვენებელი, tpr = ნამდვილი დადებითი მაჩვენებელი, threshold = გადაწყვეტილების ბარიერები
 fpr, tpr, threshold = roc_curve(y_test, positive_probabilities)
 
-# Calculate Area Under ROC Curve (AUC score)
-# AUC ranges from 0 to 1, where 1 is perfect classification
+# ROC მრუდის ქვეშ არსებული ფართობის (AUC ქულა) გამოთვლა
+# AUC მერყეობს 0-დან 1-მდე, სადაც 1 არის სრულყოფილი კლასიფიკაცია
 area = roc_auc_score(y_test, positive_probabilities)
 
-# Plot the ROC curve
+# ROC მრუდის გამოსახვა
 plt.figure(figsize=(8, 6))
-plt.plot(fpr, tpr, label=f'ROC Curve (AUC = {area:.4f})')  # Plot with AUC in label
-plt.plot([0, 1], [0, 1], 'r--', label='Random Classifier')  # Diagonal line for reference
-plt.xlabel('False Positive Rate')  # X-axis label
-plt.ylabel('True Positive Rate')  # Y-axis label
-plt.title('Logistic Regression - ROC Curve')  # Title
-plt.legend()  # Show legend
-plt.grid(True)  # Add grid for better readability
-plt.show()  # Display plot
+plt.plot(fpr, tpr, label=f'ROC მრუდი (AUC = {area:.4f})')  # AUC-სთან ერთად გამოსახვა
+plt.plot([0, 1], [0, 1], 'r--', label='შემთხვევითი კლასიფიკატორი')  # დიაგონალური ხაზი მითითებისთვის
+plt.xlabel('ცრუ დადებითი მაჩვენებელი')  # X-ღერძის ხელმოწერა
+plt.ylabel('ნამდვილი დადებითი მაჩვენებელი')  # Y-ღერძის ხელმოწერა
+plt.title('ლოგისტიკური რეგრესია - ROC მრუდი')  # სათაური
+plt.legend()  # ლეგენდის ჩვენება
+plt.grid(True)  # ბადის დამატება უკეთესი წაკითხვისთვის
+plt.show()  # გრაფიკის ჩვენება
 
-print(f"Logistic Regression AUC Score: {area:.4f}")
+print(f"ლოგისტიკური რეგრესიის AUC ქულა: {area:.4f}")
 print("\n")
 
 # ============================================================================
-# SUMMARY
+# შეჯამება
 # ============================================================================
 
 print("=" * 70)
-print("SUMMARY OF RESULTS")
+print("შედეგების შეჯამება")
 print("=" * 70)
-print(f"Decision Tree Accuracy: {accuracy_dt:.4f}")
-print(f"SVM Accuracy: {accuracy_svm:.4f}")
-print(f"Logistic Regression AUC: {area:.4f}")
+print(f"გადაწყვეტილების ხის სიზუსტე: {accuracy_dt:.4f}")
+print(f"SVM სიზუსტე: {accuracy_svm:.4f}")
+print(f"ლოგისტიკური რეგრესიის AUC: {area:.4f}")
 print("=" * 70)
